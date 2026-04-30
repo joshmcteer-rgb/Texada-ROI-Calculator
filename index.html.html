@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texada ROI Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .calculator-container {
+            width: 100%;
+            max-width: 1024px;
+            background: #ffffff;
+            border-top: 12px solid #facc15;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .calculator-container {
+                padding: 3rem;
+            }
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-box {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            font-weight: 800;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: all 0.2s;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: #facc15;
+            box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2);
+        }
+
+        .result-item {
+            background-color: #f8fafc;
+            border-left: 8px solid #facc15;
+            border-radius: 0 0.75rem 0.75rem 0;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #f1f5f9;
+            border-left-width: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        @media (min-width: 768px) {
+            .result-item {
+                padding: 1.5rem;
+            }
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+            background-color: #f1f5f9;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            left: 50%;
+            bottom: 110%;
+            transform: translateX(-50%) translateY(10px);
+            background-color: #1e293b;
+            color: #fff;
+            text-align: left;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            width: 280px;
+            z-index: 50;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        @media (min-width: 768px) {
+            .tooltip {
+                width: 350px;
+            }
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+
+        .result-item:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="calculator-container">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 gap-6">
+            <div class="flex flex-col items-center md:items-start">
+                <!-- Logo Section - Updated height for a larger logo -->
+                <div class="h-16 md:h-24 mb-2">
+                    <img src="https://cdn.news.ararental.org/wp-content/uploads/2024/08/05161505/Texada-Software-thumbnail-600x338.jpg" alt="Texada Logo" class="h-full w-auto object-contain" onerror="this.parentElement.innerHTML='<span class=\'text-2xl font-black tracking-tighter text-slate-800\'>TEXADA</span>'">
+                </div>
+            </div>
+            <div class="text-center md:text-right">
+                <p class="text-yellow-600 text-[10px] font-black uppercase tracking-[0.25em] mb-1">Projected Annual Value</p>
+                <div id="total-val" class="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 leading-none">$0</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <!-- Left: Inputs -->
+            <div class="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-8 border-b border-slate-200 pb-2">
+                    <h3 class="text-yellow-700 text-[11px] font-black uppercase tracking-widest">Fleet Discovery Inputs</h3>
+                    <button id="reset-btn" type="button" class="text-[9px] font-bold text-slate-400 hover:text-yellow-600 uppercase tracking-tighter transition-colors px-2 py-1 bg-white border border-slate-200 rounded hover:border-yellow-200">Reset to Benchmarks</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="grid grid-cols-3 gap-4 text-[9px] uppercase font-black text-slate-400">
+                        <div class="col-span-1">Metric Variable</div>
+                        <div class="text-center">Current</div>
+                        <div class="text-center text-yellow-600 font-bold">Target</div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 items-center">
+                        <div class="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Total Fleet OEC ($)</div>
+                        <div class="col-span-2">
+                            <input type="number" id="oec" value="4500000" step="any" class="input-box shadow-sm border-slate-300">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 items-center">
+                        <div class="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Dollar Ute (%)</div>
+                        <input type="number" id="dollar-curr" value="30" step="any" class="input-box shadow-sm">
+                        <input type="number" id="dollar-target" value="40" step="any" class="input-box shadow-sm border-yellow-200 bg-yellow-50/30">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 items-center">
+                        <div class="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Time Ute (%)</div>
+                        <input type="number" id="time-curr" value="60" step="any" class="input-box shadow-sm">
+                        <input type="number" id="time-target" value="75" step="any" class="input-box shadow-sm border-yellow-200 bg-yellow-50/30">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 items-center">
+                        <div class="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight">Avg Days Down</div>
+                        <input type="number" id="days-curr" value="18" step="any" class="input-box shadow-sm">
+                        <input type="number" id="days-target" value="11.7" step="any" class="input-box shadow-sm border-yellow-200 bg-yellow-50/30">
+                    </div>
+                </div>
+
+                <!-- Typical ROI Section -->
+                <div class="mt-10 p-6 bg-white border border-yellow-200 rounded-xl shadow-sm">
+                    <h4 class="text-slate-900 text-[10px] font-black uppercase tracking-[0.15em] mb-4 flex items-center">
+                        <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-2"></span>
+                        Typical ROI with Texada
+                    </h4>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-bold uppercase tracking-tight">Dollar Utilization</span>
+                            <span class="text-emerald-600 font-black">+10% Growth</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-bold uppercase tracking-tight">Time Utilization</span>
+                            <span class="text-emerald-600 font-black">+15% Capacity</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-bold uppercase tracking-tight">Downtime Days</span>
+                            <span class="text-emerald-600 font-black">-35% Reduction</span>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-[9px] text-slate-400 italic leading-relaxed">
+                        *Results based on average performance improvements observed across Texada's integrated rental and service platform.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Results -->
+            <div class="lg:col-span-7 flex flex-col justify-start space-y-5">
+                <!-- Dollar Ute -->
+                <div class="result-item shadow-sm">
+                    <div class="tooltip">
+                        <h5 class="text-yellow-400 text-[10px] font-black uppercase tracking-widest mb-2">Maximize Revenue Recovery</h5>
+                        <p class="text-[11px] text-slate-300 leading-relaxed mb-2">
+                            Texada eliminates manual accounting errors that lead to revenue leakage. Integrated billing ensures every contract detail is captured:
+                        </p>
+                        <ul class="text-[10px] text-slate-400 space-y-1.5 list-disc pl-3">
+                            <li><strong class="text-white">Ancillary Capture:</strong> Automated billing for fuel, cleaning, damage waivers, and environmental fees.</li>
+                            <li><strong class="text-white">Rate Accuracy:</strong> Ensures the correct daily, weekly, or monthly rates are applied based on actual asset usage.</li>
+                            <li><strong class="text-white">Seamless Accounting:</strong> Direct integration with your GL reduces the time-to-invoice from days to minutes.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-slate-900 text-xs font-black uppercase tracking-widest">Dollar Ute Gain</h4>
+                            <svg class="w-3 h-3 text-slate-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <p class="text-slate-500 text-[10px] font-semibold mt-1 uppercase tracking-tight">Revenue lift from asset investment</p>
+                    </div>
+                    <div id="res-dollar" class="text-3xl md:text-5xl font-black text-yellow-500 tracking-tighter">$0</div>
+                </div>
+
+                <!-- Time Ute -->
+                <div class="result-item shadow-sm">
+                    <div class="tooltip">
+                        <h5 class="text-yellow-400 text-[10px] font-black uppercase tracking-widest mb-2">Optimize Yard Velocity</h5>
+                        <p class="text-[11px] text-slate-300 leading-relaxed mb-2">
+                            Asset downtime on the yard is lost revenue. Texada shortens the rental gap through real-time operational visibility:
+                        </p>
+                        <ul class="text-[10px] text-slate-400 space-y-1.5 list-disc pl-3">
+                            <li><strong class="text-white">Mobile Check-Ins:</strong> Yard apps update equipment status to "Ready" instantly, allowing for immediate re-rental.</li>
+                            <li><strong class="text-white">Pre-Selling Returns:</strong> Sales teams can see equipment scheduled for return, letting them book orders before the asset even arrives.</li>
+                            <li><strong class="text-white">Dispatch Logistics:</strong> Optimized routing reduces "on-truck" time, increasing the days equipment is billable.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-slate-900 text-xs font-black uppercase tracking-widest">Time Ute Capacity</h4>
+                            <svg class="text-slate-300 w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <p class="text-slate-500 text-[10px] font-semibold mt-1 uppercase tracking-tight">Efficiency gain on available rent days</p>
+                    </div>
+                    <div id="res-time" class="text-3xl md:text-5xl font-black text-yellow-500 tracking-tighter">$0</div>
+                </div>
+
+                <!-- Downtime -->
+                <div class="result-item shadow-sm">
+                    <div class="tooltip">
+                        <h5 class="text-yellow-400 text-[10px] font-black uppercase tracking-widest mb-2">Strategic Shop Velocity</h5>
+                        <p class="text-[11px] text-slate-300 leading-relaxed mb-2">
+                            Every day an asset is in the shop is a day it isn't making money. Texada accelerates service through digitized shop workflows:
+                        </p>
+                        <ul class="text-[10px] text-slate-400 space-y-1.5 list-disc pl-3">
+                            <li><strong class="text-white">Work Order Automation:</strong> Eliminates paper delays by sending inspection failures directly to the shop as work orders.</li>
+                            <li><strong class="text-white">Parts Availability:</strong> Integrated inventory management ensures mechanics have the parts they need to finish the job faster.</li>
+                            <li><strong class="text-white">Priority Dispatch:</strong> Automatically flags high-demand units in the shop queue to prioritize repairs on your most profitable assets.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-slate-900 text-xs font-black uppercase tracking-widest">Downtime Recovery</h4>
+                            <svg class="w-3 h-3 text-slate-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <p class="text-slate-500 text-[10px] font-semibold mt-1 uppercase tracking-tight">Reclaiming Rental-Ready units</p>
+                    </div>
+                    <div id="res-down" class="text-3xl md:text-5xl font-black text-yellow-500 tracking-tighter">$0</div>
+                </div>
+
+                <!-- Strategic Insight Section -->
+                <div class="bg-slate-900 rounded-xl p-6 mt-4 hidden lg:block shadow-inner border border-slate-800">
+                     <p class="text-[#facc15] text-[9px] font-bold uppercase tracking-[0.2em] mb-2 text-center md:text-left">Strategic Insight</p>
+                     <p class="text-slate-400 text-xs leading-relaxed italic text-center md:text-left">
+                        With Texada’s rental solutions, you can drive more revenue by keeping your fleet working, streamlining operations, and improving customer service. It’s the one software solution that integrates everything you need, helping you run your business more effectively and centrally.
+                     </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-16 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-8 gap-4">
+            <div>Confidential Business Strategy Session</div>
+            <div>© 2026 Texada Software | Total Fleet Management</div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        const currency = (val) => new Intl.NumberFormat('en-US', { 
+            style: 'currency', 
+            currency: 'USD', 
+            maximumFractionDigits: 0 
+        }).format(val || 0);
+
+        const updateUI = () => {
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                return el ? parseFloat(el.value) || 0 : 0;
+            };
+
+            const oec = getVal('oec');
+            const dc = getVal('dollar-curr');
+            const tc = getVal('time-curr');
+            const dayc = getVal('days-curr');
+            const dt = getVal('dollar-target');
+            const tt = getVal('time-target');
+            const dayt = getVal('days-target');
+
+            // Gains Logic
+            const gainD = ((dt - dc) / 100) * oec;
+            const gainT = ((tt - tc) / 100) * oec * 0.5;
+            const diffDays = Math.max(0, dayc - dayt);
+            // Rough benchmark: daily revenue potential per OEC dollar
+            const gainDown = diffDays * (oec * 0.00082192);
+
+            // Update DOM
+            const elResDollar = document.getElementById('res-dollar');
+            const elResTime = document.getElementById('res-time');
+            const elResDown = document.getElementById('res-down');
+            const elTotalVal = document.getElementById('total-val');
+
+            if (elResDollar) elResDollar.innerText = currency(Math.max(0, gainD));
+            if (elResTime) elResTime.innerText = currency(Math.max(0, gainT));
+            if (elResDown) elResDown.innerText = currency(Math.max(0, gainDown));
+            if (elTotalVal) elTotalVal.innerText = currency(Math.max(0, gainD + gainT + gainDown));
+        };
+
+            const resetTargets = () => {
+            const dcEl = document.getElementById('dollar-curr');
+            const tcEl = document.getElementById('time-curr');
+            const daycEl = document.getElementById('days-curr');
+            
+            const dc = parseFloat(dcEl.value) || 0;
+            const tc = parseFloat(tcEl.value) || 0;
+            const dayc = parseFloat(daycEl.value) || 0;
+            
+            document.getElementById('dollar-target').value = (dc + 10).toFixed(1);
+            document.getElementById('time-target').value = (tc + 15).toFixed(1);
+            document.getElementById('days-target').value = (dayc * 0.65).toFixed(1);
+            
+            updateUI();
+        };
+
+        const init = () => {
+            const resetBtn = document.getElementById('reset-btn');
+            if (resetBtn) {
+                resetBtn.onclick = (e) => {
+                    e.preventDefault();
+                    resetTargets();
+                };
+            }
+            
+            document.querySelectorAll('input').forEach(input => {
+                input.oninput = (e) => {
+                    const id = e.target.id;
+                    const val = parseFloat(e.target.value) || 0;
+
+                    // Auto-update target when current changes for dynamic visualization
+                    if (id === 'dollar-curr') {
+                        document.getElementById('dollar-target').value = (val + 10).toFixed(1);
+                    } else if (id === 'time-curr') {
+                        document.getElementById('time-target').value = (val + 15).toFixed(1);
+                    } else if (id === 'days-curr') {
+                        document.getElementById('days-target').value = (val * 0.65).toFixed(1);
+                    }
+                    
+                    updateUI();
+                };
+            });
+
+            // Initial calculation
+            updateUI();
+        };
+
+        // Ensure initialization runs after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
